@@ -13,7 +13,9 @@ namespace ConwayGameOfLife
     public partial class Form1 : Form
     {
         // The universe array
-        bool[,] universe = new bool[5, 5];
+        bool[,] universe = new bool[10, 10];
+        bool[,] scratchpad = new bool[10, 10];
+
 
         // Drawing colors
         Color gridColor = Color.Black;
@@ -32,12 +34,45 @@ namespace ConwayGameOfLife
             // Setup the timer
             timer.Interval = 100; // milliseconds
             timer.Tick += Timer_Tick;
-            timer.Enabled = true; // start timer running
+            timer.Enabled = false; // start timer running
         }
 
         // Calculate the next generation of cells
         private void NextGeneration()
         {
+            for (int y = 0; y < universe.GetLength(1); y++)
+            {
+                for (int x = 0; x < universe.GetLength(0); x++)
+                {
+                    int neighborCount = CountNeighborsToroidal(x, y);
+                    scratchpad[x, y] = false;
+                    if (universe[x,y])
+                    {
+                        if (neighborCount < 2)
+                        {
+                            scratchpad[x, y] = false;
+                        }
+                        if (neighborCount > 3)
+                        {
+                            scratchpad[x, y] = false;
+                        }
+                        if (neighborCount == 2 || neighborCount == 3)
+                        {
+                            scratchpad[x, y] = true;
+                        }
+                    }
+                    else
+                    {
+                        if (neighborCount == 3)
+                        {
+                            scratchpad[x, y] = true;
+                        }
+                    }
+                }
+            }
+            bool[,] temp = universe;
+            universe = scratchpad;
+            scratchpad = temp;
 
 
             // Increment generation count
@@ -45,12 +80,102 @@ namespace ConwayGameOfLife
 
             // Update status strip generations
             toolStripStatusLabelGenerations.Text = "Generations = " + generations.ToString();
+
+            graphicsPanel1.Invalidate();
         }
 
         // The event called by the timer every Interval milliseconds.
         private void Timer_Tick(object sender, EventArgs e)
         {
             NextGeneration();
+        }
+
+        private int CountNeighborsFinite(int x, int y)
+        {
+            int count = 0;
+            int xLen = universe.GetLength(0);
+            int yLen = universe.GetLength(1);
+
+            for (int yOffset = -1; yOffset <= 1; yOffset++)
+            {
+                for (int xOffset = -1; xOffset <= 1; xOffset++)
+                {
+                    int xCheck = x + xOffset;
+                    int yCheck = y + yOffset;
+
+                    if (yOffset == 0 && xOffset == 0)
+                    {
+                        continue;
+                    }
+                    if (xCheck < 0)
+                    {
+                        continue;
+                    }
+                    if (yCheck < 0)
+                    {
+                        continue;
+                    }
+                    if (xCheck >= xLen)
+                    {
+                        continue;
+                    }
+                    if (yCheck >= yLen)
+                    {
+                        continue;
+                    }
+
+                    if (universe[xCheck, yCheck] == true)
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            return count;
+        }
+
+        private int CountNeighborsToroidal(int x, int y)
+        {
+            int count = 0;
+            int xLen = universe.GetLength(0);
+            int yLen = universe.GetLength(1);
+
+            for (int yOffset = -1; yOffset <= 1; yOffset++)
+            {
+                for (int xOffset = -1; xOffset <= 1; xOffset++)
+                {
+                    int xCheck = x + xOffset;
+                    int yCheck = y + yOffset;
+
+                    if (xOffset == 0 && yOffset == 0)
+                    {
+                        continue;
+                    }
+
+                    if (xCheck < 0)
+                    {
+                        xCheck = xLen - 1;
+                    }
+                    if (yCheck < 0)
+                    {
+                        yCheck = yLen - 1;
+                    }
+                    if (xCheck >= xLen)
+                    {
+                        xCheck = 0;
+                    }
+                    if (yCheck >= yLen)
+                    {
+                        yCheck = 0;
+                    }
+
+                    if (universe[xCheck, yCheck] == true)
+                    {
+                        count++;
+                    }
+                }
+            }
+            return count;
         }
 
         private void graphicsPanel1_Paint(object sender, PaintEventArgs e)
@@ -117,6 +242,39 @@ namespace ConwayGameOfLife
                 // Tell Windows you need to repaint
                 graphicsPanel1.Invalidate();
             }
+        }
+
+        private void toolStripButton1_Click(object sender, EventArgs e)
+        {
+            timer.Enabled = true; //starts the timer
+        }
+
+        private void toolStripButton2_Click(object sender, EventArgs e)
+        {
+            timer.Enabled = false; //stops the timer
+        }
+
+        private void toolStripButton3_Click(object sender, EventArgs e)
+        {
+            NextGeneration();
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void newToolStripButton_Click(object sender, EventArgs e)
+        {
+            timer.Enabled = false;
+            for (int i = 0; i < universe.GetLength(1); i++)
+            {
+                for (int j = 0; j < universe.GetLength(0); j++)
+                {
+                    universe[j, i] = false;
+                }
+            }
+            graphicsPanel1.Invalidate();
         }
     }
 }
